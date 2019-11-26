@@ -1,6 +1,6 @@
 FROM php:5.6.40-fpm-alpine
 
-ENV PHPREDIS_VERSION 3.1.3
+ENV PHPREDIS_VERSION 3.1.2
 
 RUN apk add -U tzdata \
     && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
@@ -20,6 +20,24 @@ RUN apk add php5-fpm php5-mcrypt php5-soap php5-openssl php5-gmp php5-pdo_odbc p
     && mv phpredis-$PHPREDIS_VERSION /usr/src/php/ext/redis \
     && docker-php-ext-install redis \
     && rm -rf /usr/src/php 
+
+#调整php.ini配置参数
+RUN sed  -i '235i\output_buffering = on' /etc/php5/php.ini \
+    && sed  -i 's/disable_functions =/disable_functions = system,chroot,chgrp,chown,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,stream_socket_server,fsocket/g' /etc/php5/php.ini \
+    && sed  -i 's/expose_php = on/expose_php = off/g' /etc/php5/php.ini \ 
+    && sed  -i 's/max_execution_time = 30/max_execution_time = 300/g'  /etc/php5/php.ini \
+    && sed  -i 's/; max_input_vars = 1000/max_input_vars = 3000/g' /etc/php5/php.ini \
+    && sed  -i 's/request_order = "GP"/request_order = "CGP"/g' /etc/php5/php.ini \
+    && sed  -i 's/post_max_size = 8M/post_max_size = 50M/g' /etc/php5/php.ini \
+    && sed  -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php5/php.ini \
+    && sed  -i 's/upload_max_filesize = 2M/upload_max_filesize = 50M/g' /etc/php5/php.ini \
+    && sed  -i '825i\upload_tmp_dir = \/tmp' /etc/php5/php.ini \
+    && sed  -i 's/date.timezone = UTC/date.timezone = Asia\/Shanghai/g' /etc/php5/php.ini \
+    && sed  -i 's/;sendmail_path =/sendmail_path = \/usr\/sbin\/sendmail -t -i/g' /etc/php5/php.ini \
+    && sed  -i 's/mysqlnd.collect_memory_statistics = off/mysqlnd.collect_memory_statistics = on/g'  /etc/php5/php.ini \
+    && sed  -i 's/session.cookie_httponly =/session.cookie_httponly = 1/g'   /etc/php5/php.ini \
+    && echo "extension=\"/usr/local/lib/php/extensions/no-debug-non-zts-20131226/redis.so\"" >> /etc/php5/php.ini
+
     
 #调整nginx 配置参数
 RUN touch /var/run/nginx.pid \
